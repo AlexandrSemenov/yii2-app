@@ -5,12 +5,19 @@ namespace frontend\controllers;
 use common\models\User;
 use frontend\models\Country;
 use yii\data\Pagination;
-use yii\db\Query;
 use yii\web\Controller;
 use Yii;
 
 class CountryController extends Controller
 {
+    public function actions()
+    {
+        return [
+            'test' => 'frontend\components\TestAction',
+            'print' => 'frontend\components\PrintAction',
+        ];
+    }
+
     public function actionIndex()
     {
         $query = Country::find();
@@ -42,7 +49,10 @@ class CountryController extends Controller
 
     public function actionView($code)
     {
-        $countries = Country::findAll(['code' => $code]);
+//        $countries = Country::findAll(['code' => $code]);
+
+        $sql = 'SELECT name, population FROM country WHERE code = :code';
+        $countries = Country::findBySql($sql, ['code' => $code])->all();
 
         if($countries != null)
         {
@@ -58,12 +68,19 @@ class CountryController extends Controller
 
     public function actionCreate()
     {
-        $request = Yii::$app->request;
+        $request = Yii::$app->request->post();
         $country = new Country();
+//        $country->attributes = $request;
 
-        $country->code = $request->post('code');
-        $country->name = $request->post('name');
-        $country->population = $request->post('population');
+        $country->code = $request['code'];
+        $country->name = $request['name'];
+        $country->population = $request['population'];
+
+        if(!$country->validate()){
+            $errors = $country->errors;
+            return $this->render('addcountry', ['errors' => $errors]);
+        }
+
         $country->save();
 
         return $this->redirect("view/{$country->code}", 302);
